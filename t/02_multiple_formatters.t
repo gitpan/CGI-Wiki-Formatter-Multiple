@@ -5,7 +5,7 @@ use CGI::Wiki::Formatter::Default;
 use CGI::Wiki::Formatter::Multiple;
 use vars qw( $num_sqlite_tests );
 BEGIN {
-   $num_sqlite_tests = 5;
+   $num_sqlite_tests = 7;
 }
 use Test::More tests => 1 + $num_sqlite_tests;
 
@@ -31,7 +31,7 @@ SKIP: {
     my $wiki = CGI::Wiki->new( store => $store, formatter => $formatter );
     isa_ok( $wiki, "CGI::Wiki" );
 
-    $wiki->write_node( "Normal Node", "foo bar", undef,
+    $wiki->write_node( "Normal Node", "foo bar FooBar", undef,
                        { formatter => "normal" } ) or die "Can't write node";
     $wiki->write_node( "UC Node", "foo bar", undef,
                        { formatter => "uc" } ) or die "Can't write node";
@@ -39,7 +39,7 @@ SKIP: {
 
     my %data1 = $wiki->retrieve_node( "Normal Node" );
     my $output1 = $wiki->format( $data1{content}, $data1{metadata} );
-    like( $output1, qr|<p>\s*foo bar\s*</p>|,
+    like( $output1, qr|\Q<p>foo bar <a href="wiki.cgi?node=FooBar">FooBar</a></p>|,
           "'normal' node formatted as expected" );
 
     my %data2 = $wiki->retrieve_node( "UC Node" );
@@ -58,6 +58,12 @@ SKIP: {
     my %data4 = $wiki->retrieve_node( "Other Node" );
     my $output4 = $wiki->format( $data4{content}, $data4{metadata} );
     like( $output4, qr|<p>\s*foo bar\s*</p>|, "default _DEFAULT as expected" );
+
+    ok( $formatter->can("find_internal_links"),
+      "formatter can find_internal_links" );
+
+    my @links = $formatter->find_internal_links( $data1{content}, $data1{metadata} );
+    is_deeply(\@links, [ 'FooBar' ], "links are correct");
 
 } # end of SKIP
 

@@ -2,7 +2,7 @@ package CGI::Wiki::Formatter::Multiple;
 use strict;
 
 use vars qw( $VERSION );
-$VERSION = '0.01';
+$VERSION = '0.02';
 
 =head1 NAME
 
@@ -96,8 +96,29 @@ object passes itself in as the second parameter.
 
 sub format {
     my ($self, $raw, $wiki, $metadata) = @_;
-    my $formatter_label = $metadata->{formatter}[0] || "_DEFAULT";
-    return $self->{formatters}{$formatter_label}->format( $raw, $wiki );
+    return $self->_formatter($metadata)->format($raw, $wiki);
+}
+
+=item B<find_internal_links( $raw, $metadata )>
+
+=cut
+
+sub find_internal_links {
+    my ($self, $raw, $metadata) = @_;
+    return () unless $self->_formatter($metadata);
+    return () unless $self->_formatter($metadata)->can("find_internal_links");
+    return $self->_formatter($metadata)->find_internal_links($raw, $metadata);
+}
+
+# internal method to return the correct formatter for the current
+# page.
+
+sub _formatter {
+  my $self = shift;
+  my $metadata = shift;
+  my $label = $metadata->{formatter} || "_DEFAULT";
+  $label = $label->[0] if ref($label);
+  return $self->{formatters}{$label} || $self->{formatters}{_DEFAULT};
 }
 
 =back
@@ -116,7 +137,7 @@ Bug reports, questions and feature requests should go to cgi-wiki-dev@earth.li
 
 =head1 COPYRIGHT
 
-     Copyright (C) 2003 Kake Pugh.  All Rights Reserved.
+     Copyright (C) 2003-4 Kake Pugh.  All Rights Reserved.
 
 This module is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.
